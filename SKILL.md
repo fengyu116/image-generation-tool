@@ -1,24 +1,38 @@
 ---
 name: image-generation-tool
-description: Generate images with an OpenAI-compatible image API using environment configuration. Use when the user asks Codex to create images from text prompts, choose one of nano-banana-2, gpt-image-2, gpt-image-2-vip, or nano-banana-pro, optimize prompts, apply style presets, or submit one or more reference images together with the request.
+description: Generate images with an OpenAI-compatible image API using environment configuration. Use when the user asks Codex to create images from text prompts, choose one of nano-banana-2, gpt-image-2, gpt-image-2-vip, or nano-banana-pro, optimize prompts, apply style presets, submit reference images, check API configuration, or guide them from a product/reference image plus requirements into a confirmed prompt and final generated image.
 ---
 
 # Image Generation Tool
 
-Use the bundled image generation CLI to turn a user prompt into an image through an OpenAI-compatible `/v1/images/generations` endpoint. Prefer this skill when the user wants model selection, prompt improvement, reusable style presets, `.env`-based configuration, or reference-image-guided generation.
+Use the bundled image generation CLI to turn a user prompt into an image through an OpenAI-compatible `/v1/images/generations` endpoint. Prefer this skill when the user wants model selection, prompt improvement, reusable style presets, `.env`-based configuration, guided prompt drafting, or reference-image-guided generation.
 
 ## Workflow
 
-1. Clarify only missing essentials: subject, target use, aspect ratio/size, model, and whether reference images should be included. If the user already supplied enough detail, proceed.
-2. Improve the prompt before generation unless the user explicitly asks to use it verbatim. Keep user intent intact, add concrete visual details, composition, lighting, material, camera/lens, and negative constraints.
-3. Choose a model. If unsure, run `--list-models` first to inspect the configured endpoint:
+1. Run `--check-config` before the first generation in a project/session. If key fields are missing, tell the user to create/update `.env` with `IMG_BASE_URL`, `IMG_API_KEY`, and `IMG_MODEL` before generating.
+2. Clarify only missing essentials: subject, target use, aspect ratio/size, model, and whether reference images should be included. If the user already supplied enough detail, proceed.
+3. For guided use, draft the final prompt first and ask for confirmation before spending a generation call. This is especially important when the user uploads a product/reference image and asks for an ad, poster, e-commerce image, character, or style transformation.
+4. Improve the prompt before generation unless the user explicitly asks to use it verbatim. Keep user intent intact, add concrete visual details, composition, lighting, material, camera/lens, and negative constraints.
+5. Choose a model. If unsure, run `--list-models` first to inspect the configured endpoint:
    - `nano-banana-pro`: default for highest detail and prompt fidelity.
    - `gpt-image-2`: use when the configured endpoint lists the standard GPT Image 2 model.
    - `gpt-image-2-vip`: use for polished general-purpose creative images.
    - `nano-banana-2`: use for faster drafts or lower-cost iterations.
-4. Apply a style preset when requested or when a preset clearly fits. Read `references/style-presets.md` for available preset language.
-5. Run `scripts/generate_image.py` from this skill. Pass reference image paths with `--reference-image` once per file.
-6. Show the saved image path and, in Codex Desktop, render it with Markdown image syntax using an absolute path.
+6. Apply a style preset when requested or when a preset clearly fits. Read `references/style-presets.md` for available preset language.
+7. Run `scripts/generate_image.py` from this skill. Pass reference image paths with `--reference-image` once per file.
+8. Show the saved image path and, in Codex Desktop, render it with Markdown image syntax using an absolute path.
+
+## Guided Prompt Flow
+
+Use this flow when the user asks for help, uploads a product/reference image, or gives a broad goal such as "make an ad image from this product photo":
+
+1. Identify the intended output: product hero image, poster, social cover, e-commerce main image, character concept, brand mascot, etc.
+2. Inspect or ask for the reference image path. If the uploaded image is not available as a local path, ask the user to save/provide the image path before using `--reference-image`.
+3. Draft a prompt using `--draft-prompt`, choosing style and optimization level from the user's use case.
+4. Present the drafted prompt to the user in Chinese, with a short note about model, size, style, and reference image handling.
+5. Generate only after the user confirms or edits the prompt.
+
+For a product image, preserve the product shape, color, material, logo/label if requested, and key selling point. Change only the scene, lighting, background, props, or marketing composition requested by the user.
 
 ## Configuration
 
@@ -44,6 +58,18 @@ IMG_SAVE_METADATA=1
 
 ## Quick Commands
 
+Show guided usage help:
+
+```bash
+python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --usage-help
+```
+
+Check required configuration:
+
+```bash
+python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --check-config
+```
+
 Generate a default high-quality image:
 
 ```bash
@@ -66,6 +92,12 @@ Submit reference images:
 
 ```bash
 python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --prompt "redesign this character as a game hero" --reference-image C:/path/ref1.png --reference-image C:/path/ref2.jpg
+```
+
+Draft a prompt for user confirmation without calling the image API:
+
+```bash
+python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --draft-prompt --style taobao-product --optimize-level strong --prompt "Use the product photo as reference and create a premium e-commerce hero image" --reference-image C:/path/product.png
 ```
 
 Use `--no-optimize` when the user asks for an exact prompt. Use `--optimize-level light|standard|strong|none` to control prompt expansion. Use `--negative "..."` for explicit negative constraints. Use `--dry-run` to inspect the final payload without calling the API.

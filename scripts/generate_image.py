@@ -28,6 +28,23 @@ DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) "
     "WindowsPowerShell/5.1.19041.6456"
 )
+HELP_TEXT = """
+Image Generation Tool usage flow:
+
+1. Configure .env in the working directory:
+   IMG_BASE_URL=https://api.modeltoken.cc
+   IMG_API_KEY=sk-your-key
+   IMG_MODEL=gpt-image-2
+
+2. Check configuration:
+   python generate_image.py --check-config
+
+3. Draft a prompt without calling the image API:
+   python generate_image.py --draft-prompt --style product --prompt "Use the product photo as reference and create a premium e-commerce hero image"
+
+4. After the user confirms the prompt, generate:
+   python generate_image.py --model gpt-image-2 --style product --prompt "..." --reference-image C:/path/product.png
+""".strip()
 
 STYLE_PRESETS = {
     "cinematic": "Photoreal cinematic still, strong composition, natural depth of field, motivated lighting, subtle film grain, high dynamic range, realistic materials, 35mm lens, no watermark.",
@@ -110,6 +127,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output-dir", default=env_value(env_file, "IMG_OUTPUT_DIR", "dist"))
     parser.add_argument("--timeout", type=float, default=float(env_value(env_file, "IMG_TIMEOUT", "600")))
     parser.add_argument("--dry-run", action="store_true", help="Print final payload without sending a request.")
+    parser.add_argument("--draft-prompt", action="store_true", help="Print the final optimized prompt only, without calling the API.")
+    parser.add_argument("--check-config", action="store_true", help="Check required configuration and exit.")
+    parser.add_argument("--usage-help", action="store_true", help="Print guided usage help and exit.")
     parser.add_argument("--list-models", action="store_true", help="List models from /v1/models and exit.")
     parser.add_argument("--save-metadata", dest="save_metadata", action="store_true", default=env_value(env_file, "IMG_SAVE_METADATA", "1").lower() not in ("0", "false", "no"))
     parser.add_argument("--no-save-metadata", dest="save_metadata", action="store_false")
@@ -190,6 +210,44 @@ def build_payload(args: argparse.Namespace) -> dict[str, Any]:
             raise ValueError("--extra-json must be a JSON object.")
         payload.update(extra)
     return payload
+
+
+def check_config(args: argparse.Namespace) -> int:
+    errors = []
+    warnings = []
+    if not args.base_url.strip():
+        errors.append("IMG_BASE_URL or --base-url is required.")
+    if not args.api_key.strip():
+        errors.append("IMG_API_KEY, OPENAI_API_KEY, or --api-key is required.")
+    if not args.model.strip():
+        errors.append("IMG_MODEL or --model is required.")
+    if args.model not in allowed_models(load_dotenv(Path.cwd() / ".env")):
+        warnings.append("Selected model is not in IMG_ALLOWED_MODELS/default allowlist.")
+
+    print("Image Generation Tool configuration check")
+    print(f"base_url={args.base_url or '<missing>'}")
+    print(f"api_key={'set' if args.api_key.strip() else '<missing>'}")
+    print(f"model={args.model or '<missing>'}")
+    print(f"size={args.size}")
+    print(f"quality={args.quality}")
+    print(f"reference_field={args.reference_field}")
+
+    for warning in warnings:
+        print(f"WARNING: {warning}")
+    if errors:
+        print("")
+        print("Missing required configuration:")
+        for error in errors:
+            print(f"- {error}")
+        print("")
+        print("Create a .env file in the working directory, for example:")
+        print("IMG_BASE_URL=https://api.modeltoken.cc")
+        print("IMG_API_KEY=sk-your-key")
+        print("IMG_MODEL=gpt-image-2")
+        return 2
+
+    print("Configuration looks ready.")
+    return 0
 
 
 def get_json(url: str, api_key: str, timeout: float) -> dict[str, Any]:
@@ -356,6 +414,13 @@ def print_request_error(error: BaseException) -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.usage_help:
+        print(HELP_TEXT)
+        return 0
+
+    if args.check_config:
+        return check_config(args)
+
     if args.list_models:
         if not args.api_key.strip():
             print("Missing API key. Set IMG_API_KEY in .env or pass --api-key.", file=sys.stderr)
@@ -371,13 +436,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("Missing prompt. Pass --prompt or use --list-models.", file=sys.stderr)
         return 2
 
-    if not args.api_key.strip() and not args.dry_run:
+    if not args.api_key.strip() and not args.dry_run and not args.draft_prompt:
         print("Missing API key. Set IMG_API_KEY in .env or pass --api-key.", file=sys.stderr)
         return 2
 
     try:
         payload = build_payload(args)
         output_path = Path(args.output_path) if args.output_path else default_output_path(args.output_dir)
+        if args.draft_prompt:
+            print(payload["prompt"])
+            return 0
         if args.dry_run:
             print(json.dumps(payload, indent=2, ensure_ascii=False))
             if args.save_metadata:

@@ -42,7 +42,10 @@ IMG_SAVE_METADATA=1
 ## Usage
 
 ```powershell
+python scripts/generate_image.py --usage-help
+python scripts/generate_image.py --check-config
 python scripts/generate_image.py --list-models
+python scripts/generate_image.py --draft-prompt --style taobao-product --optimize-level strong --prompt "Use this product photo as reference and create a premium e-commerce hero image" --reference-image C:/path/product.png
 python scripts/generate_image.py --model gpt-image-2 --style poster-tech --prompt "淘心API 科技公司宣传海报"
 python scripts/generate_image.py --model gpt-image-2 --style 3d-animation --optimize-level strong --prompt "一个自信的科技公司工程师吉祥物角色"
 ```

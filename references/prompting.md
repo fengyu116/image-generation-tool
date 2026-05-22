@@ -33,6 +33,22 @@ When reference images are included, explicitly state how to use them:
 
 Avoid vague phrases like "make it better" without saying what should change.
 
+## Product Image Workflow
+
+When a user uploads or provides a product image:
+
+1. Preserve product identity: shape, color, material, packaging, label, and visible logo when requested.
+2. Ask or infer the target channel: e-commerce hero, social cover, poster, banner, detail-page scene, lifestyle image.
+3. Convert the user's business need into a visual direction: premium, affordable, technical, eco-friendly, cute, luxury, daily-use, gifting, etc.
+4. Add scene and lighting details without changing the product itself.
+5. Draft the prompt and ask the user to confirm before generation when the request is broad or generation cost matters.
+
+Prompt pattern:
+
+```text
+Use the reference image to preserve the product's exact shape, color, material, packaging, and visible brand details. Create [target output] for [audience/channel]. Place the product in [scene/background] with [lighting], [props], [composition], and [selling-point mood]. Keep the product realistic and clearly readable. Avoid watermark, extra text, distorted packaging, changed logo, and low-resolution artifacts.
+```
+
 ## Variant Strategy
 
 For exploration, create 2-3 prompt variants that differ in composition, style, or mood while preserving the user's core request. Label them briefly and ask the user which to generate only when generation cost or ambiguity is high.

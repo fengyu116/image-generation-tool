@@ -1,0 +1,4 @@
+interface:
+  display_name: "Image Generation Tool"
+  short_description: "Env-based image generation"
+  default_prompt: "Use $image-generation-tool to generate an image from my prompt with a selected model, style preset, and optional reference images."

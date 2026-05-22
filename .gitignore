@@ -1,0 +1,9 @@
+.env
+dist/
+output/
+outputs/
+generated/
+*.pyc
+__pycache__/
+*.prompt.txt
+*.meta.json

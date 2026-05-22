@@ -1,6 +1,6 @@
 # Image Generation Tool Skill
 
-这是一个用于 Codex 的图片生成技能，通过 OpenAI-compatible 图片接口生成图片。它适合用于提示词优化、风格预设、参考图生图、产品图广告图、科技海报、3D 动画角色、电商主图等场景。
+这是一个可用于 Codex、OpenClaw 等 AI Agent/自动化工作流的图片生成技能/工具包，通过 OpenAI-compatible 图片接口生成图片。它适合用于提示词优化、风格预设、参考图生图、产品图广告图、科技海报、3D 动画角色、电商主图等场景。
 
 ## 功能
 
@@ -16,6 +16,8 @@
 
 ## 安装
 
+### Codex
+
 把整个目录复制到 Codex skills 目录：
 
 ```powershell
@@ -23,6 +25,16 @@ Copy-Item -Recurse . "$env:USERPROFILE\.codex\skills\image-generation-tool"
 ```
 
 也可以让 Codex 从这个 GitHub 仓库安装技能。
+
+### OpenClaw / 其它 Agent
+
+把整个仓库作为工具目录加入 OpenClaw 或其它 Agent 的可访问工作区即可。核心入口是：
+
+```text
+scripts/generate_image.py
+```
+
+Agent 只需要能够读取 `SKILL.md`、`references/` 和执行 Python 脚本，就可以按同样流程完成配置检查、提示词草稿、参考图生图和结果保存。
 
 ## 配置
 

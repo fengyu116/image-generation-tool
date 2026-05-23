@@ -1,6 +1,6 @@
 ---
 name: image-generation-tool
-description: Generate images with an OpenAI-compatible image API using environment configuration. Use when the user asks Codex to create images from text prompts, choose one of nano-banana-2, gpt-image-2, gpt-image-2-vip, or nano-banana-pro, optimize prompts, apply style presets, submit reference images, check API configuration, or guide them from a product/reference image plus requirements into a confirmed prompt and final generated image.
+description: Use when the user asks to 生图, 生成图片, 做图, 改图, generate or edit an image, optimize an image prompt, apply a style preset, or use product/reference images with an OpenAI-compatible image API.
 ---
 
 # Image Generation Tool
@@ -9,42 +9,37 @@ Use the bundled Node.js image generation CLI to turn a user prompt into an image
 
 ## Workflow
 
-1. Run `--check-config` before the first generation in a project/session. If key fields are missing, tell the user to create/update `.env` with `IMG_BASE_URL`, `IMG_API_KEY`, and `IMG_MODEL` before generating.
+1. Before generating, require `IMG_API_KEY` in the current working directory `.env`. The CLI reads credentials only from `.env`; do not pass a key in chat, shell environment, or command flags. Check this silently and notify the user only if configuration is missing or blocks generation.
 2. Clarify only missing essentials: subject, target use, aspect ratio/size, model, and whether reference images should be included. If the user already supplied enough detail, proceed.
-3. For guided use, draft the final prompt first and ask for confirmation before spending a generation call. This is especially important when the user uploads a product/reference image and asks for an ad, poster, e-commerce image, character, or style transformation.
+3. Always draft or present the final prompt and ask for user confirmation before spending a generation call, including reference-image/img2img tasks.
 4. Improve the prompt before generation unless the user explicitly asks to use it verbatim. Keep user intent intact, add concrete visual details, composition, lighting, material, camera/lens, and negative constraints.
-5. Choose a model. If unsure, run `--list-models` first to inspect the configured endpoint:
-   - `nano-banana-pro`: default for highest detail and prompt fidelity.
-   - `gpt-image-2`: use when the configured endpoint lists the standard GPT Image 2 model.
-   - `gpt-image-2-vip`: use for polished general-purpose creative images.
-   - `nano-banana-2`: use for faster drafts or lower-cost iterations.
+5. Use `gpt-image-2` by default. Do not select or pass another model unless the user explicitly asks for it. Explicit alternatives are `nano-banana-2`, `gpt-image-2-vip`, and `nano-banana-pro`.
 6. Apply a style preset when requested or when a preset clearly fits. Read `references/style-presets.md` for available preset language.
 7. Run `scripts/generate_image.mjs` with Node.js from this skill. Pass reference image paths with `--reference-image` once per file. By default, reference images use `/v1/images/edits` with `image[]=@file`; text-only prompts use `/v1/images/generations`.
 8. When a logo must remain pixel-perfect, do not rely on image generation alone. Use this Node.js CLI to create the poster/background, then composite the original logo with a deterministic image tool.
-9. Show the saved image path and, in Codex Desktop, render it with Markdown image syntax using an absolute path.
+9. Show the saved image path and, in Codex Desktop, render it with Markdown image syntax using an absolute path. Do not automatically inspect, compare, or validate the generated image after it is returned unless the user explicitly asks.
 
 ## Guided Prompt Flow
 
-Use this flow when the user asks for help, uploads a product/reference image, or gives a broad goal such as "make an ad image from this product photo":
+Use this flow whenever the user asks for an image, uploads a product/reference image, or gives a broad goal such as "make an ad image from this product photo":
 
 1. Identify the intended output: product hero image, poster, social cover, e-commerce main image, character concept, brand mascot, etc.
 2. Inspect or ask for the reference image path. If the uploaded image is not available as a local path, ask the user to save/provide the image path before using `--reference-image`.
 3. Draft a prompt using `--draft-prompt`, choosing style and optimization level from the user's use case.
 4. Present the drafted prompt to the user in Chinese, with a short note about model, size, style, and reference image handling.
-5. Generate only after the user confirms or edits the prompt.
+5. Generate only after the user confirms or edits the prompt. After generation, return the result without running automatic visual correctness checks.
 
 For a product image, preserve the product shape, color, material, logo/label if requested, and key selling point. Change only the scene, lighting, background, props, or marketing composition requested by the user.
 
 ## Configuration
 
-Configure credentials in a project `.env`, the current shell environment, or explicit CLI flags. `.env` values in the current working directory are loaded first, then inherited environment variables are used.
+Configure credentials in the current working directory `.env`. `IMG_API_KEY` is intentionally loaded only from `.env`, never from inherited environment variables or CLI flags.
 
 Supported environment variables:
 
 ```text
 IMG_BASE_URL=https://tokenhub.host
 IMG_API_KEY=sk-...
-IMG_MODEL=nano-banana-pro
 IMG_SIZE=auto
 IMG_QUALITY=auto
 IMG_TIMEOUT=150
@@ -57,7 +52,7 @@ IMG_NEGATIVE=no watermark, no signature, no malformed hands
 IMG_SAVE_METADATA=1
 ```
 
-`OPENAI_API_KEY` is accepted as a fallback for `IMG_API_KEY`.
+The default model is always `gpt-image-2`. Pass `--model` only after the user explicitly requests another allowed model.
 
 ## Quick Commands
 
@@ -85,10 +80,10 @@ List endpoint models:
 node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --list-models
 ```
 
-Choose a model and style:
+Choose a non-default model only when explicitly requested:
 
 ```bash
-node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --model gpt-image-2 --style cinematic --prompt "a futuristic city tram at sunrise"
+node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --style cinematic --prompt "a futuristic city tram at sunrise"
 ```
 
 Submit reference images:

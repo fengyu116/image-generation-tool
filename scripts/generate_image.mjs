@@ -49,7 +49,6 @@ Image Generation Tool usage flow:
 1. Configure .env in the working directory:
    IMG_BASE_URL=https://api.modeltoken.cc
    IMG_API_KEY=sk-your-key
-   IMG_MODEL=gpt-image-2
    IMG_TIMEOUT=150
 
 2. Check configuration:
@@ -59,10 +58,12 @@ Image Generation Tool usage flow:
    node generate_image.mjs --draft-prompt --style product --prompt "Use the product photo as reference and create a premium e-commerce hero image"
 
 4. Generate text-to-image:
-   node generate_image.mjs --model gpt-image-2 --prompt "..."
+   node generate_image.mjs --prompt "..."
 
 5. Generate with reference image through /v1/images/edits:
-   node generate_image.mjs --model gpt-image-2 --prompt "..." --reference-image C:/path/product.png
+   node generate_image.mjs --prompt "..." --reference-image C:/path/product.png
+
+The default model is gpt-image-2. Pass --model only when the user explicitly requests a different allowed model.
 `.trim();
 
 function loadDotenv(filePath = path.join(process.cwd(), ".env")) {
@@ -90,8 +91,8 @@ function splitCsv(value) {
 function parseArgs(argv, envFile) {
   const args = {
     baseUrl: envValue(envFile, "IMG_BASE_URL", DEFAULT_BASE_URL),
-    apiKey: envValue(envFile, "IMG_API_KEY") || envValue(envFile, "OPENAI_API_KEY"),
-    model: envValue(envFile, "IMG_MODEL", DEFAULT_MODEL),
+    apiKey: envFile.IMG_API_KEY || "",
+    model: DEFAULT_MODEL,
     prompt: "",
     size: envValue(envFile, "IMG_SIZE", DEFAULT_SIZE),
     quality: envValue(envFile, "IMG_QUALITY", DEFAULT_QUALITY),
@@ -123,7 +124,6 @@ function parseArgs(argv, envFile) {
     };
     switch (flag) {
       case "--base-url": args.baseUrl = next(); break;
-      case "--api-key": args.apiKey = next(); break;
       case "--model": args.model = next(); break;
       case "--prompt": args.prompt = next(); break;
       case "--size": args.size = next(); break;
@@ -292,8 +292,7 @@ async function listModels(args) {
 function checkConfig(args, allowedModels) {
   const errors = [];
   if (!args.baseUrl) errors.push("IMG_BASE_URL or --base-url is required.");
-  if (!args.apiKey) errors.push("IMG_API_KEY, OPENAI_API_KEY, or --api-key is required.");
-  if (!args.model) errors.push("IMG_MODEL or --model is required.");
+  if (!args.apiKey) errors.push("IMG_API_KEY is required in the current working directory .env file.");
   console.log("Image Generation Tool configuration check");
   console.log(`runtime=node ${process.version}`);
   console.log(`base_url=${args.baseUrl || "<missing>"}`);
@@ -312,7 +311,6 @@ function checkConfig(args, allowedModels) {
     console.log("\nCreate a .env file in the working directory, for example:");
     console.log("IMG_BASE_URL=https://api.modeltoken.cc");
     console.log("IMG_API_KEY=sk-your-key");
-    console.log("IMG_MODEL=gpt-image-2");
     console.log("IMG_TIMEOUT=150");
     return 2;
   }
@@ -441,13 +439,13 @@ async function main() {
   }
   if (args.checkConfig) return checkConfig(args, allowedModels);
   if (args.listModels) {
-    if (!args.apiKey) throw new Error("Missing API key. Set IMG_API_KEY in .env or pass --api-key.");
+    if (!args.apiKey) throw new Error("Missing API key. Set IMG_API_KEY in the current working directory .env file.");
     await listModels(args);
     return 0;
   }
   if (!args.prompt.trim()) throw new Error("Missing prompt. Pass --prompt or use --list-models.");
   if (!args.apiKey && !args.dryRun && !args.draftPrompt) {
-    throw new Error("Missing API key. Set IMG_API_KEY in .env or pass --api-key.");
+    throw new Error("Missing API key. Set IMG_API_KEY in the current working directory .env file.");
   }
 
   const payload = buildPayload(args);

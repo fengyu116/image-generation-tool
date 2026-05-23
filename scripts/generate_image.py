@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import argparse
 import base64
-import json
 import mimetypes
+import json
 import os
 import sys
 import urllib.error
 import urllib.request
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from http.client import HTTPMessage
@@ -122,6 +123,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--no-optimize", action="store_true", help="Use the prompt exactly as provided, aside from optional style text.")
     parser.add_argument("--reference-image", action="append", default=[], help="Local reference image path. Repeat for multiple images.")
     parser.add_argument("--reference-field", default=env_value(env_file, "IMG_REFERENCE_FIELD", DEFAULT_REFERENCE_FIELD))
+    parser.add_argument("--api-mode", choices=("auto", "generations", "edits"), default=env_value(env_file, "IMG_API_MODE", "auto"), help="Use edits for reference-image img2img, generations for text-to-image, or auto.")
     parser.add_argument("--exact-logo-image", default="", help="Overlay this logo file exactly after generation instead of letting the image model redraw it.")
     parser.add_argument("--exact-logo-position", choices=("top", "bottom", "both"), default=env_value(env_file, "IMG_EXACT_LOGO_POSITION", "top"))
     parser.add_argument("--extra-json", default="", help="JSON object merged into the request payload.")
@@ -204,7 +206,7 @@ def build_payload(args: argparse.Namespace) -> dict[str, Any]:
         "size": args.size,
         "quality": args.quality,
     }
-    if args.reference_image:
+    if args.reference_image and resolve_api_mode(args) == "generations":
         payload[args.reference_field] = [image_to_data_url(path) for path in args.reference_image]
     if args.extra_json:
         extra = json.loads(args.extra_json)
@@ -212,6 +214,12 @@ def build_payload(args: argparse.Namespace) -> dict[str, Any]:
             raise ValueError("--extra-json must be a JSON object.")
         payload.update(extra)
     return payload
+
+
+def resolve_api_mode(args: argparse.Namespace) -> str:
+    if args.api_mode != "auto":
+        return args.api_mode
+    return "edits" if args.reference_image else "generations"
 
 
 def check_config(args: argparse.Namespace) -> int:
@@ -396,6 +404,34 @@ def build_headers(api_key: str) -> dict[str, str]:
     }
 
 
+def build_multipart_form(fields: Mapping[str, str], files: Sequence[tuple[str, Path]]) -> tuple[bytes, str]:
+    boundary = f"----image-generation-tool-{uuid.uuid4().hex}"
+    chunks: list[bytes] = []
+
+    def add(value: str) -> None:
+        chunks.append(value.encode("utf-8"))
+
+    for name, value in fields.items():
+        add(f"--{boundary}\r\n")
+        add(f'Content-Disposition: form-data; name="{name}"\r\n\r\n')
+        add(f"{value}\r\n")
+
+    for field_name, path in files:
+        mime_type, _ = mimetypes.guess_type(path.name)
+        if not mime_type:
+            mime_type = "application/octet-stream"
+        add(f"--{boundary}\r\n")
+        add(
+            f'Content-Disposition: form-data; name="{field_name}"; filename="{path.name}"\r\n'
+        )
+        add(f"Content-Type: {mime_type}\r\n\r\n")
+        chunks.append(path.read_bytes())
+        add("\r\n")
+
+    add(f"--{boundary}--\r\n")
+    return b"".join(chunks), boundary
+
+
 def redact_secret(value: str) -> str:
     if len(value) <= 12:
         return "***"
@@ -413,6 +449,10 @@ def format_headers(headers: Mapping[str, str] | HTTPMessage) -> str:
 
 
 def post_image_request(args: argparse.Namespace, payload: Mapping[str, Any]) -> bytes:
+    mode = resolve_api_mode(args)
+    if mode == "edits":
+        return post_image_edit_request(args, payload)
+
     url = f"{args.base_url}/v1/images/generations"
     body = json.dumps(payload).encode("utf-8")
     headers = build_headers(args.api_key)
@@ -431,6 +471,47 @@ def post_image_request(args: argparse.Namespace, payload: Mapping[str, Any]) -> 
         error.request_url = url
         error.request_headers = headers
         error.request_body = body
+        raise
+
+
+def post_image_edit_request(args: argparse.Namespace, payload: Mapping[str, Any]) -> bytes:
+    url = f"{args.base_url}/v1/images/edits"
+    reference_paths = [Path(path).expanduser().resolve() for path in args.reference_image]
+    for path in reference_paths:
+        if not path.exists():
+            raise FileNotFoundError(f"Reference image not found: {path}")
+
+    fields = {
+        "model": str(payload.get("model", args.model)),
+        "prompt": str(payload.get("prompt", "")),
+        "size": str(payload.get("size", args.size)),
+        "quality": str(payload.get("quality", args.quality)),
+        "output_format": "png",
+    }
+    body, boundary = build_multipart_form(
+        fields,
+        [("image[]", path) for path in reference_paths],
+    )
+    headers = {
+        "Authorization": f"Bearer {args.api_key}",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "Accept": "application/json",
+        "User-Agent": DEFAULT_USER_AGENT,
+    }
+    request = urllib.request.Request(url, data=body, method="POST", headers=headers)
+
+    print(f"POST {url}")
+    print(f"model={fields['model']} size={fields['size']} quality={fields['quality']} output_format=png")
+    print(f"prompt={fields['prompt']}")
+    print(f"edit_images={len(reference_paths)} field=image[]")
+
+    try:
+        with urllib.request.urlopen(request, timeout=args.timeout) as response:
+            return response.read()
+    except urllib.error.HTTPError as error:
+        error.request_url = url
+        error.request_headers = headers
+        error.request_body = b"<multipart form data omitted>"
         raise
 
 
@@ -514,7 +595,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(payload["prompt"])
             return 0
         if args.dry_run:
-            print(json.dumps(payload, indent=2, ensure_ascii=False))
+            print(json.dumps({"api_mode": resolve_api_mode(args), "payload": redact_payload(payload)}, indent=2, ensure_ascii=False))
             if args.save_metadata:
                 save_sidecar_files(output_path=output_path, args=args, payload=payload, result=None)
             return 0

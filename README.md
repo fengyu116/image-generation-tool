@@ -10,6 +10,7 @@
 - 支持提示词优化等级：`none`、`light`、`standard`、`strong`
 - 内置风格预设：科技海报、3D 动画、产品图、品牌吉祥物、微信封面、小红书封面、淘宝主图等
 - 支持本地参考图路径输入
+- 传入参考图时默认使用 `/v1/images/edits` 的 multipart img2img 请求
 - 默认保存 `.prompt.txt` 和 `.meta.json`，便于复盘生成参数
 - 支持先产出提示词，用户确认后再生图
 - 支持使用前检查关键配置，缺少密钥时会提醒配置
@@ -48,6 +49,7 @@ IMG_SIZE=1024x1024
 IMG_QUALITY=auto
 IMG_OUTPUT_DIR=dist
 IMG_REFERENCE_FIELD=reference_images
+IMG_API_MODE=auto
 IMG_ALLOWED_MODELS=nano-banana-2,gpt-image-2,gpt-image-2-vip,nano-banana-pro
 IMG_OPTIMIZE_LEVEL=standard
 IMG_SAVE_METADATA=1
@@ -85,6 +87,21 @@ python scripts/generate_image.py --draft-prompt --style taobao-product --optimiz
 
 ```powershell
 python scripts/generate_image.py --model gpt-image-2 --style taobao-product --optimize-level strong --prompt "根据这张产品图，生成一张高级电商主图，面向年轻用户，突出质感和卖点" --reference-image C:/path/product.png
+```
+
+传入 `--reference-image` 时，默认会走 `/v1/images/edits`：
+
+```text
+POST /v1/images/edits
+model=gpt-image-2
+image[]=@C:/path/product.png
+prompt=...
+```
+
+如需测试旧的 JSON 参考图字段，可以加：
+
+```powershell
+python scripts/generate_image.py --api-mode generations --prompt "..." --reference-image C:/path/product.png
 ```
 
 生成科技公司宣传海报：

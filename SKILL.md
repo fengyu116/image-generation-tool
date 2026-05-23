@@ -5,7 +5,7 @@ description: Generate images with an OpenAI-compatible image API using environme
 
 # Image Generation Tool
 
-Use the bundled image generation CLI to turn a user prompt into an image through an OpenAI-compatible `/v1/images/generations` endpoint. Prefer this skill when the user wants model selection, prompt improvement, reusable style presets, `.env`-based configuration, guided prompt drafting, or reference-image-guided generation.
+Use the bundled image generation CLI to turn a user prompt into an image through OpenAI-compatible image endpoints. Text-only generation uses `/v1/images/generations`; reference-image generation defaults to `/v1/images/edits` multipart img2img. Prefer this skill when the user wants model selection, prompt improvement, reusable style presets, `.env`-based configuration, guided prompt drafting, or reference-image-guided generation.
 
 ## Workflow
 
@@ -19,7 +19,7 @@ Use the bundled image generation CLI to turn a user prompt into an image through
    - `gpt-image-2-vip`: use for polished general-purpose creative images.
    - `nano-banana-2`: use for faster drafts or lower-cost iterations.
 6. Apply a style preset when requested or when a preset clearly fits. Read `references/style-presets.md` for available preset language.
-7. Run `scripts/generate_image.py` from this skill. Pass reference image paths with `--reference-image` once per file.
+7. Run `scripts/generate_image.py` from this skill. Pass reference image paths with `--reference-image` once per file. By default, reference images use `/v1/images/edits` with `image[]=@file`; text-only prompts use `/v1/images/generations`.
 8. When a logo must remain unchanged, do not rely on reference-image generation alone. Pass the logo with `--exact-logo-image`; the script will paste the supplied logo after generation instead of letting the model redraw it.
 9. Show the saved image path and, in Codex Desktop, render it with Markdown image syntax using an absolute path.
 
@@ -49,6 +49,7 @@ IMG_SIZE=1024x1024
 IMG_QUALITY=auto
 IMG_OUTPUT_DIR=dist
 IMG_REFERENCE_FIELD=reference_images
+IMG_API_MODE=auto
 IMG_ALLOWED_MODELS=nano-banana-2,gpt-image-2,gpt-image-2-vip,nano-banana-pro
 IMG_OPTIMIZE_LEVEL=standard
 IMG_NEGATIVE=no watermark, no signature, no malformed hands
@@ -95,6 +96,8 @@ Submit reference images:
 python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --prompt "redesign this character as a game hero" --reference-image C:/path/ref1.png --reference-image C:/path/ref2.jpg
 ```
 
+Reference-image calls default to `/v1/images/edits`. Use `--api-mode generations` only when testing a provider-specific `reference_images` JSON field. Use `--api-mode edits` to force multipart img2img.
+
 Use an exact, unredrawn logo after generation:
 
 ```bash
@@ -136,6 +139,6 @@ Add only useful missing detail:
 
 ## Reference Images
 
-When the user provides images, pass each local file with `--reference-image`. The script embeds files as data URLs in the payload field named by `IMG_REFERENCE_FIELD` or `--reference-field`. If the endpoint expects a different field name, set `IMG_REFERENCE_FIELD` in `.env` or pass `--reference-field`.
+When the user provides images, pass each local file with `--reference-image`. In `auto` mode the script sends them to `/v1/images/edits` as multipart `image[]` files. This usually preserves reference-image structure better than the old JSON `reference_images` path.
 
-If the endpoint rejects reference images, rerun with `--dry-run` to inspect payload shape, then adjust `--reference-field` or `--extra-json` for that provider.
+If the endpoint rejects edits, rerun with `--dry-run` to inspect mode selection. Then try `--api-mode generations` with `--reference-field` or `--extra-json` for provider-specific compatibility.

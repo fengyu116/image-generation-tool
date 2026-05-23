@@ -32,7 +32,7 @@ Copy-Item -Recurse . "$env:USERPROFILE\.codex\skills\image-generation-tool"
 把整个仓库作为工具目录加入 OpenClaw 或其它 Agent 的可访问工作区即可。核心入口是：
 
 ```text
-scripts/generate_image.py
+scripts/generate_image.mjs
 ```
 
 Agent 只需要能够读取 `SKILL.md`、`references/` 和执行 Python 脚本，就可以按同样流程完成配置检查、提示词草稿、参考图生图和结果保存。
@@ -47,6 +47,7 @@ IMG_API_KEY=sk-...
 IMG_MODEL=gpt-image-2
 IMG_SIZE=1024x1024
 IMG_QUALITY=auto
+IMG_TIMEOUT=350
 IMG_OUTPUT_DIR=dist
 IMG_REFERENCE_FIELD=reference_images
 IMG_API_MODE=auto
@@ -57,36 +58,44 @@ IMG_SAVE_METADATA=1
 
 也可以使用环境变量 `OPENAI_API_KEY` 作为 `IMG_API_KEY` 的备用值。
 
+如果当前网络需要代理，Node 24+ 运行前设置：
+
+```powershell
+$env:NODE_USE_ENV_PROXY="1"
+$env:HTTPS_PROXY="http://127.0.0.1:7897"
+$env:HTTP_PROXY="http://127.0.0.1:7897"
+```
+
 ## 常用命令
 
 查看使用帮助：
 
 ```powershell
-python scripts/generate_image.py --usage-help
+node scripts/generate_image.mjs --usage-help
 ```
 
 检查关键配置是否完整：
 
 ```powershell
-python scripts/generate_image.py --check-config
+node scripts/generate_image.mjs --check-config
 ```
 
 列出接口可用模型：
 
 ```powershell
-python scripts/generate_image.py --list-models
+node scripts/generate_image.mjs --list-models
 ```
 
 先根据需求和参考图生成提示词，不调用生图接口：
 
 ```powershell
-python scripts/generate_image.py --draft-prompt --style taobao-product --optimize-level strong --prompt "根据这张产品图，生成一张高级电商主图，面向年轻用户，突出质感和卖点" --reference-image C:/path/product.png
+node scripts/generate_image.mjs --draft-prompt --style taobao-product --optimize-level strong --prompt "根据这张产品图，生成一张高级电商主图，面向年轻用户，突出质感和卖点" --reference-image C:/path/product.png
 ```
 
 确认提示词后生成图片：
 
 ```powershell
-python scripts/generate_image.py --model gpt-image-2 --style taobao-product --optimize-level strong --prompt "根据这张产品图，生成一张高级电商主图，面向年轻用户，突出质感和卖点" --reference-image C:/path/product.png
+node scripts/generate_image.mjs --model gpt-image-2 --style taobao-product --optimize-level strong --prompt "根据这张产品图，生成一张高级电商主图，面向年轻用户，突出质感和卖点" --reference-image C:/path/product.png
 ```
 
 传入 `--reference-image` 时，默认会走 `/v1/images/edits`：
@@ -101,19 +110,19 @@ prompt=...
 如需测试旧的 JSON 参考图字段，可以加：
 
 ```powershell
-python scripts/generate_image.py --api-mode generations --prompt "..." --reference-image C:/path/product.png
+node scripts/generate_image.mjs --api-mode generations --prompt "..." --reference-image C:/path/product.png
 ```
 
 生成科技公司宣传海报：
 
 ```powershell
-python scripts/generate_image.py --model gpt-image-2 --style poster-tech --prompt "淘心API 科技公司宣传海报，突出智能接口、稳定高效、开箱即用"
+node scripts/generate_image.mjs --model gpt-image-2 --style poster-tech --prompt "淘心API 科技公司宣传海报，突出智能接口、稳定高效、开箱即用"
 ```
 
 生成 3D 动画角色：
 
 ```powershell
-python scripts/generate_image.py --model gpt-image-2 --style 3d-animation --optimize-level strong --prompt "一个自信的科技公司工程师吉祥物角色"
+node scripts/generate_image.mjs --model gpt-image-2 --style 3d-animation --optimize-level strong --prompt "一个自信的科技公司工程师吉祥物角色"
 ```
 
 ## 推荐工作流

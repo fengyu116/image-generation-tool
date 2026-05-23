@@ -5,7 +5,7 @@ description: Generate images with an OpenAI-compatible image API using environme
 
 # Image Generation Tool
 
-Use the bundled image generation CLI to turn a user prompt into an image through OpenAI-compatible image endpoints. Text-only generation uses `/v1/images/generations`; reference-image generation defaults to `/v1/images/edits` multipart img2img. Prefer this skill when the user wants model selection, prompt improvement, reusable style presets, `.env`-based configuration, guided prompt drafting, or reference-image-guided generation.
+Use the bundled Node.js image generation CLI to turn a user prompt into an image through OpenAI-compatible image endpoints. Text-only generation uses `/v1/images/generations`; reference-image generation defaults to `/v1/images/edits` multipart img2img. Prefer this skill when the user wants model selection, prompt improvement, reusable style presets, `.env`-based configuration, guided prompt drafting, or reference-image-guided generation.
 
 ## Workflow
 
@@ -19,8 +19,8 @@ Use the bundled image generation CLI to turn a user prompt into an image through
    - `gpt-image-2-vip`: use for polished general-purpose creative images.
    - `nano-banana-2`: use for faster drafts or lower-cost iterations.
 6. Apply a style preset when requested or when a preset clearly fits. Read `references/style-presets.md` for available preset language.
-7. Run `scripts/generate_image.py` from this skill. Pass reference image paths with `--reference-image` once per file. By default, reference images use `/v1/images/edits` with `image[]=@file`; text-only prompts use `/v1/images/generations`.
-8. When a logo must remain unchanged, do not rely on reference-image generation alone. Pass the logo with `--exact-logo-image`; the script will paste the supplied logo after generation instead of letting the model redraw it.
+7. Run `scripts/generate_image.mjs` with Node.js from this skill. Pass reference image paths with `--reference-image` once per file. By default, reference images use `/v1/images/edits` with `image[]=@file`; text-only prompts use `/v1/images/generations`.
+8. When a logo must remain pixel-perfect, do not rely on image generation alone. Use this Node.js CLI to create the poster/background, then composite the original logo with a deterministic image tool.
 9. Show the saved image path and, in Codex Desktop, render it with Markdown image syntax using an absolute path.
 
 ## Guided Prompt Flow
@@ -47,6 +47,7 @@ IMG_API_KEY=sk-...
 IMG_MODEL=nano-banana-pro
 IMG_SIZE=1024x1024
 IMG_QUALITY=auto
+IMG_TIMEOUT=350
 IMG_OUTPUT_DIR=dist
 IMG_REFERENCE_FIELD=reference_images
 IMG_API_MODE=auto
@@ -58,56 +59,60 @@ IMG_SAVE_METADATA=1
 
 `OPENAI_API_KEY` is accepted as a fallback for `IMG_API_KEY`.
 
+For proxy networks with Node 24+, set proxy environment variables before running the CLI:
+
+```powershell
+$env:NODE_USE_ENV_PROXY="1"
+$env:HTTPS_PROXY="http://127.0.0.1:7897"
+$env:HTTP_PROXY="http://127.0.0.1:7897"
+```
+
 ## Quick Commands
 
 Show guided usage help:
 
 ```bash
-python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --usage-help
+node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --usage-help
 ```
 
 Check required configuration:
 
 ```bash
-python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --check-config
+node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --check-config
 ```
 
 Generate a default high-quality image:
 
 ```bash
-python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --prompt "cinematic product photo of a translucent smart speaker on a walnut desk"
+node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --prompt "cinematic product photo of a translucent smart speaker on a walnut desk"
 ```
 
 List endpoint models:
 
 ```bash
-python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --list-models
+node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --list-models
 ```
 
 Choose a model and style:
 
 ```bash
-python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --model gpt-image-2 --style cinematic --prompt "a futuristic city tram at sunrise"
+node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --model gpt-image-2 --style cinematic --prompt "a futuristic city tram at sunrise"
 ```
 
 Submit reference images:
 
 ```bash
-python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --prompt "redesign this character as a game hero" --reference-image C:/path/ref1.png --reference-image C:/path/ref2.jpg
+node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --prompt "redesign this character as a game hero" --reference-image C:/path/ref1.png --reference-image C:/path/ref2.jpg
 ```
 
 Reference-image calls default to `/v1/images/edits`. Use `--api-mode generations` only when testing a provider-specific `reference_images` JSON field. Use `--api-mode edits` to force multipart img2img.
 
-Use an exact, unredrawn logo after generation:
-
-```bash
-python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --prompt "中医诊所每日打卡海报" --reference-image C:/path/logo.jpg --exact-logo-image C:/path/logo.jpg --exact-logo-position both
-```
+For pixel-perfect logos, generate the poster/background first and then composite the original logo with a deterministic image tool. Do not expect the image model to preserve a logo exactly.
 
 Draft a prompt for user confirmation without calling the image API:
 
 ```bash
-python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --draft-prompt --style taobao-product --optimize-level strong --prompt "Use the product photo as reference and create a premium e-commerce hero image" --reference-image C:/path/product.png
+node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --draft-prompt --style taobao-product --optimize-level strong --prompt "Use the product photo as reference and create a premium e-commerce hero image" --reference-image C:/path/product.png
 ```
 
 Use `--no-optimize` when the user asks for an exact prompt. Use `--optimize-level light|standard|strong|none` to control prompt expansion. Use `--negative "..."` for explicit negative constraints. Use `--dry-run` to inspect the final payload without calling the API.

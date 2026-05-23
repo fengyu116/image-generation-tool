@@ -122,6 +122,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--no-optimize", action="store_true", help="Use the prompt exactly as provided, aside from optional style text.")
     parser.add_argument("--reference-image", action="append", default=[], help="Local reference image path. Repeat for multiple images.")
     parser.add_argument("--reference-field", default=env_value(env_file, "IMG_REFERENCE_FIELD", DEFAULT_REFERENCE_FIELD))
+    parser.add_argument("--exact-logo-image", default="", help="Overlay this logo file exactly after generation instead of letting the image model redraw it.")
+    parser.add_argument("--exact-logo-position", choices=("top", "bottom", "both"), default=env_value(env_file, "IMG_EXACT_LOGO_POSITION", "top"))
     parser.add_argument("--extra-json", default="", help="JSON object merged into the request payload.")
     parser.add_argument("--output-path", default="")
     parser.add_argument("--output-dir", default=env_value(env_file, "IMG_OUTPUT_DIR", "dist"))
@@ -320,6 +322,71 @@ def save_sidecar_files(
     print(f"Saved metadata: {meta_path.resolve()}")
 
 
+def apply_exact_logo_overlay(image_path: Path, logo_path_text: str, position: str) -> Path:
+    try:
+        from PIL import Image, ImageChops, ImageDraw
+    except ImportError as error:
+        raise RuntimeError("Pillow is required for --exact-logo-image. Install it with: python -m pip install Pillow") from error
+
+    logo_path = Path(logo_path_text).expanduser().resolve()
+    if not logo_path.exists():
+        raise FileNotFoundError(f"Exact logo image not found: {logo_path}")
+
+    base = Image.open(image_path).convert("RGBA")
+    logo = Image.open(logo_path).convert("RGB")
+    white = Image.new("RGB", logo.size, (255, 255, 255))
+    diff = ImageChops.difference(logo, white).convert("L")
+    bbox = diff.point(lambda p: 255 if p > 18 else 0).getbbox()
+    logo_crop = logo.crop(bbox).convert("RGBA") if bbox else logo.convert("RGBA")
+
+    def make_panel(max_w: int, max_h: int) -> Image.Image:
+        ratio = min(max_w / logo_crop.width, max_h / logo_crop.height)
+        size = (int(logo_crop.width * ratio), int(logo_crop.height * ratio))
+        mark = logo_crop.resize(size, Image.Resampling.LANCZOS)
+        pad_x, pad_y = 24, 18
+        panel = Image.new("RGBA", (size[0] + pad_x * 2, size[1] + pad_y * 2), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(panel, "RGBA")
+        draw.rounded_rectangle(
+            [0, 0, panel.width - 1, panel.height - 1],
+            radius=max(12, min(panel.width, panel.height) // 10),
+            fill=(255, 255, 255, 255),
+            outline=(211, 174, 85, 230),
+            width=2,
+        )
+        panel.alpha_composite(mark, (pad_x, pad_y))
+        return panel
+
+    def paste_center(panel: Image.Image, center_x: int, center_y: int) -> None:
+        base.alpha_composite(panel, (int(center_x - panel.width / 2), int(center_y - panel.height / 2)))
+
+    width, height = base.size
+    draw = ImageDraw.Draw(base, "RGBA")
+    if position in ("top", "both"):
+        top_panel = make_panel(int(width * 0.18), int(height * 0.08))
+        cover = [
+            int(width / 2 - top_panel.width * 0.9),
+            int(height * 0.015),
+            int(width / 2 + top_panel.width * 0.9),
+            int(height * 0.015 + top_panel.height * 1.25),
+        ]
+        draw.rounded_rectangle(cover, radius=20, fill=(245, 239, 218, 245))
+        paste_center(top_panel, width // 2, int(height * 0.067))
+    if position in ("bottom", "both"):
+        bottom_panel = make_panel(int(width * 0.22), int(height * 0.095))
+        cover = [
+            int(width / 2 - bottom_panel.width * 1.25),
+            int(height * 0.87),
+            int(width / 2 + bottom_panel.width * 1.25),
+            int(height * 0.99),
+        ]
+        draw.rounded_rectangle(cover, radius=28, fill=(18, 82, 61, 245), outline=(218, 186, 106, 190), width=2)
+        paste_center(bottom_panel, width // 2, int(height * 0.935))
+
+    output_path = image_path.with_name(f"{image_path.stem}-exact-logo{image_path.suffix}")
+    base.save(output_path)
+    return output_path
+
+
 def build_headers(api_key: str) -> dict[str, str]:
     return {
         "Authorization": f"Bearer {api_key}",
@@ -453,6 +520,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         response_body = post_image_request(args, payload)
         result = handle_image_response(response_body, output_path)
+        if result.kind == "file" and result.output_path and args.exact_logo_image:
+            result.output_path = apply_exact_logo_overlay(
+                result.output_path,
+                args.exact_logo_image,
+                args.exact_logo_position,
+            )
         if args.save_metadata and result.kind == "file" and result.output_path:
             save_sidecar_files(output_path=result.output_path, args=args, payload=payload, result=result)
     except Exception as error:

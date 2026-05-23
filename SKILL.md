@@ -20,7 +20,8 @@ Use the bundled image generation CLI to turn a user prompt into an image through
    - `nano-banana-2`: use for faster drafts or lower-cost iterations.
 6. Apply a style preset when requested or when a preset clearly fits. Read `references/style-presets.md` for available preset language.
 7. Run `scripts/generate_image.py` from this skill. Pass reference image paths with `--reference-image` once per file.
-8. Show the saved image path and, in Codex Desktop, render it with Markdown image syntax using an absolute path.
+8. When a logo must remain unchanged, do not rely on reference-image generation alone. Pass the logo with `--exact-logo-image`; the script will paste the supplied logo after generation instead of letting the model redraw it.
+9. Show the saved image path and, in Codex Desktop, render it with Markdown image syntax using an absolute path.
 
 ## Guided Prompt Flow
 
@@ -92,6 +93,12 @@ Submit reference images:
 
 ```bash
 python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --prompt "redesign this character as a game hero" --reference-image C:/path/ref1.png --reference-image C:/path/ref2.jpg
+```
+
+Use an exact, unredrawn logo after generation:
+
+```bash
+python C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.py --prompt "中医诊所每日打卡海报" --reference-image C:/path/logo.jpg --exact-logo-image C:/path/logo.jpg --exact-logo-position both
 ```
 
 Draft a prompt for user confirmation without calling the image API:

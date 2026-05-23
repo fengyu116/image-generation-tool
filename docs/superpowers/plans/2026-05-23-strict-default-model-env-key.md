@@ -32,4 +32,4 @@
 - [x] Document that any image-generation request triggers this skill, reference-image requests require prompt confirmation before generation, generated results are returned without automatic accuracy validation, defaults are lightweight with `gpt-image-2`, and keys belong only in `.env`.
 - [x] Copy updated skill files to the installed skill directory.
 - [x] Run CLI syntax/tests and a dry-run/config check to verify the distributed copy follows the new policy.
-- [ ] Commit and push the updated repository.
+- [x] Commit and push the updated repository.

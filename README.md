@@ -35,7 +35,7 @@ Copy-Item -Recurse . "$env:USERPROFILE\.codex\skills\image-generation-tool"
 scripts/generate_image.mjs
 ```
 
-Agent 只需要能够读取 `SKILL.md`、`references/` 和执行 Python 脚本，就可以按同样流程完成配置检查、提示词草稿、参考图生图和结果保存。
+Agent 只需要能够读取 `SKILL.md`、`references/` 和执行 Node.js 脚本，就可以按同样流程完成配置检查、提示词草稿、参考图生图和结果保存。
 
 ## 配置
 
@@ -45,26 +45,18 @@ Agent 只需要能够读取 `SKILL.md`、`references/` 和执行 Python 脚本�
 IMG_BASE_URL=https://api.modeltoken.cc
 IMG_API_KEY=sk-...
 IMG_MODEL=gpt-image-2
-IMG_SIZE=1024x1024
+IMG_SIZE=auto
 IMG_QUALITY=auto
-IMG_TIMEOUT=350
+IMG_TIMEOUT=150
 IMG_OUTPUT_DIR=dist
 IMG_REFERENCE_FIELD=reference_images
 IMG_API_MODE=auto
 IMG_ALLOWED_MODELS=nano-banana-2,gpt-image-2,gpt-image-2-vip,nano-banana-pro
-IMG_OPTIMIZE_LEVEL=standard
+IMG_OPTIMIZE_LEVEL=light
 IMG_SAVE_METADATA=1
 ```
 
 也可以使用环境变量 `OPENAI_API_KEY` 作为 `IMG_API_KEY` 的备用值。
-
-如果当前网络需要代理，Node 24+ 运行前设置：
-
-```powershell
-$env:NODE_USE_ENV_PROXY="1"
-$env:HTTPS_PROXY="http://127.0.0.1:7897"
-$env:HTTP_PROXY="http://127.0.0.1:7897"
-```
 
 ## 常用命令
 

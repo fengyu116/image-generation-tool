@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 const DEFAULT_ALLOWED_MODELS = ["nano-banana-2", "gpt-image-2", "gpt-image-2-vip", "nano-banana-pro"];
 const DEFAULT_BASE_URL = "https://api.modeltoken.cc";
 const DEFAULT_MODEL = "gpt-image-2";
-const DEFAULT_SIZE = "1024x1024";
+const DEFAULT_SIZE = "auto";
 const DEFAULT_QUALITY = "auto";
-const DEFAULT_TIMEOUT_SECONDS = 350;
+const DEFAULT_TIMEOUT_SECONDS = 150;
 const DEFAULT_USER_AGENT =
   "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.19041.6456";
 
@@ -50,7 +50,7 @@ Image Generation Tool usage flow:
    IMG_BASE_URL=https://api.modeltoken.cc
    IMG_API_KEY=sk-your-key
    IMG_MODEL=gpt-image-2
-   IMG_TIMEOUT=350
+   IMG_TIMEOUT=150
 
 2. Check configuration:
    node generate_image.mjs --check-config
@@ -97,7 +97,7 @@ function parseArgs(argv, envFile) {
     quality: envValue(envFile, "IMG_QUALITY", DEFAULT_QUALITY),
     outputFormat: envValue(envFile, "IMG_OUTPUT_FORMAT", "png"),
     style: "",
-    optimizeLevel: envValue(envFile, "IMG_OPTIMIZE_LEVEL", "standard"),
+    optimizeLevel: envValue(envFile, "IMG_OPTIMIZE_LEVEL", "light"),
     negative: envValue(envFile, "IMG_NEGATIVE", ""),
     noOptimize: false,
     referenceImages: [],
@@ -261,10 +261,7 @@ async function requestJson(url, options, timeoutSeconds) {
       throw new Error(`Request timed out after ${timeoutSeconds} seconds`);
     }
     if (String(error.message || error).includes("fetch failed")) {
-      throw new Error(
-        "fetch failed. If this network requires a proxy, start Node with proxy env enabled, for example: " +
-        "NODE_USE_ENV_PROXY=1 HTTPS_PROXY=http://127.0.0.1:7897 HTTP_PROXY=http://127.0.0.1:7897"
-      );
+      throw new Error(`fetch failed. Check network access to ${url} and verify IMG_BASE_URL is reachable.`);
     }
     throw error;
   } finally {
@@ -316,7 +313,7 @@ function checkConfig(args, allowedModels) {
     console.log("IMG_BASE_URL=https://api.modeltoken.cc");
     console.log("IMG_API_KEY=sk-your-key");
     console.log("IMG_MODEL=gpt-image-2");
-    console.log("IMG_TIMEOUT=350");
+    console.log("IMG_TIMEOUT=150");
     return 2;
   }
   console.log("Configuration looks ready.");

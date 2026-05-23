@@ -45,27 +45,19 @@ Supported environment variables:
 IMG_BASE_URL=https://tokenhub.host
 IMG_API_KEY=sk-...
 IMG_MODEL=nano-banana-pro
-IMG_SIZE=1024x1024
+IMG_SIZE=auto
 IMG_QUALITY=auto
-IMG_TIMEOUT=350
+IMG_TIMEOUT=150
 IMG_OUTPUT_DIR=dist
 IMG_REFERENCE_FIELD=reference_images
 IMG_API_MODE=auto
 IMG_ALLOWED_MODELS=nano-banana-2,gpt-image-2,gpt-image-2-vip,nano-banana-pro
-IMG_OPTIMIZE_LEVEL=standard
+IMG_OPTIMIZE_LEVEL=light
 IMG_NEGATIVE=no watermark, no signature, no malformed hands
 IMG_SAVE_METADATA=1
 ```
 
 `OPENAI_API_KEY` is accepted as a fallback for `IMG_API_KEY`.
-
-For proxy networks with Node 24+, set proxy environment variables before running the CLI:
-
-```powershell
-$env:NODE_USE_ENV_PROXY="1"
-$env:HTTPS_PROXY="http://127.0.0.1:7897"
-$env:HTTP_PROXY="http://127.0.0.1:7897"
-```
 
 ## Quick Commands
 
@@ -81,7 +73,7 @@ Check required configuration:
 node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --check-config
 ```
 
-Generate a default high-quality image:
+Generate a default lightweight image:
 
 ```bash
 node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --prompt "cinematic product photo of a translucent smart speaker on a walnut desk"
@@ -126,7 +118,7 @@ Pass `--no-save-metadata` to skip these files.
 
 ## Prompt Optimization
 
-Read `references/prompting.md` when improving prompts, creating variants, or explaining why a prompt was changed. Keep optimized prompts concise enough to be steerable, usually 80-180 English words for image APIs. Prefer `--optimize-level standard`; use `strong` for posters, detailed scenes, character concepts, and reference-image transformations.
+Read `references/prompting.md` when improving prompts, creating variants, or explaining why a prompt was changed. Keep optimized prompts concise enough to be steerable, usually 80-180 English words for image APIs. The CLI defaults to `--optimize-level light` for faster, lighter calls; use `standard` or `strong` for posters, detailed scenes, character concepts, and reference-image transformations.
 
 Preserve:
 

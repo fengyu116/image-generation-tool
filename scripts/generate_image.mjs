@@ -159,6 +159,9 @@ function validateArgs(args, allowedModels) {
   if (!["auto", "generations", "edits"].includes(args.apiMode)) {
     throw new Error("--api-mode must be auto, generations, or edits");
   }
+  if (args.referenceImages.length && args.apiMode === "generations") {
+    throw new Error("Reference images must use /v1/images/edits. Remove --api-mode generations when using --reference-image.");
+  }
   if (!["none", "light", "standard", "strong"].includes(args.optimizeLevel)) {
     throw new Error("--optimize-level must be none, light, standard, or strong");
   }

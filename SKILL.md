@@ -15,8 +15,8 @@ Use the bundled Node.js image generation CLI to turn a user prompt into an image
 4. Improve the prompt before generation unless the user explicitly asks to use it verbatim. Keep user intent intact, add concrete visual details, composition, lighting, material, camera/lens, and negative constraints.
 5. Use `gpt-image-2` by default. Do not select or pass another model unless the user explicitly asks for it. Explicit alternatives are `nano-banana-2`, `gpt-image-2-vip`, and `nano-banana-pro`.
 6. Apply a style preset when requested or when a preset clearly fits. Read `references/style-presets.md` for available preset language.
-7. Run `scripts/generate_image.mjs` with Node.js from this skill. Pass reference image paths with `--reference-image` once per file. By default, reference images use `/v1/images/edits` with `image[]=@file`; text-only prompts use `/v1/images/generations`.
-8. When a logo must remain pixel-perfect, do not rely on image generation alone. Use this Node.js CLI to create the poster/background, then composite the original logo with a deterministic image tool.
+7. Run `scripts/generate_image.mjs` with Node.js from this skill. Pass uploaded/local reference images with `--reference-image` once per file. If the user uploads or supplies any image, the request must use `/v1/images/edits` with `image[]=@file`; text-only prompts use `/v1/images/generations`.
+8. This skill is responsible only for prompt optimization, parameter selection, submitting the generation request, and saving the returned files. Do not add extra image-editing steps after the API response as part of this skill.
 9. Show the saved image path and, in Codex Desktop, render it with Markdown image syntax using an absolute path. Do not automatically inspect, compare, or validate the generated image after it is returned unless the user explicitly asks.
 
 ## Guided Prompt Flow
@@ -44,7 +44,6 @@ IMG_SIZE=auto
 IMG_QUALITY=auto
 IMG_TIMEOUT=150
 IMG_OUTPUT_DIR=dist
-IMG_REFERENCE_FIELD=reference_images
 IMG_API_MODE=auto
 IMG_ALLOWED_MODELS=nano-banana-2,gpt-image-2,gpt-image-2-vip,nano-banana-pro
 IMG_OPTIMIZE_LEVEL=light
@@ -92,9 +91,9 @@ Submit reference images:
 node C:/Users/fengyu/.codex/skills/image-generation-tool/scripts/generate_image.mjs --prompt "redesign this character as a game hero" --reference-image C:/path/ref1.png --reference-image C:/path/ref2.jpg
 ```
 
-Reference-image calls default to `/v1/images/edits`. Use `--api-mode generations` only when testing a provider-specific `reference_images` JSON field. Use `--api-mode edits` to force multipart img2img.
+Reference-image calls must use `/v1/images/edits`. Do not send uploaded/reference images through `/v1/images/generations`.
 
-For pixel-perfect logos, generate the poster/background first and then composite the original logo with a deterministic image tool. Do not expect the image model to preserve a logo exactly.
+Use `--size` only when the user explicitly asks for a supported size; otherwise keep the default `size=auto`.
 
 Draft a prompt for user confirmation without calling the image API:
 
@@ -131,6 +130,6 @@ Add only useful missing detail:
 
 ## Reference Images
 
-When the user provides images, pass each local file with `--reference-image`. In `auto` mode the script sends them to `/v1/images/edits` as multipart `image[]` files. This usually preserves reference-image structure better than the old JSON `reference_images` path.
+When the user provides images, pass each local file with `--reference-image`. In `auto` mode the script sends them to `/v1/images/edits` as multipart `image[]` files.
 
-If the endpoint rejects edits, rerun with `--dry-run` to inspect mode selection. Then try `--api-mode generations` with `--reference-field` or `--extra-json` for provider-specific compatibility.
+If the endpoint rejects edits, report the provider error and do not fall back to a text-only or generations request with uploaded images.

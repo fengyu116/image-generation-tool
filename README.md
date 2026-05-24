@@ -14,6 +14,7 @@
 - 默认保存 `.prompt.txt` 和 `.meta.json`，便于复盘生成参数
 - 生图前必须先产出提示词，用户确认后再执行
 - 生图完成后直接返回文件，不自动校验画面或文字准确性
+- 技能只负责提示词优化、参数选择、提交生成请求和保存返回结果
 - 使用前静默检查关键配置，仅在缺少密钥或无法执行时提醒配置
 
 ## 安装
@@ -49,7 +50,6 @@ IMG_SIZE=auto
 IMG_QUALITY=auto
 IMG_TIMEOUT=150
 IMG_OUTPUT_DIR=dist
-IMG_REFERENCE_FIELD=reference_images
 IMG_API_MODE=auto
 IMG_ALLOWED_MODELS=nano-banana-2,gpt-image-2,gpt-image-2-vip,nano-banana-pro
 IMG_OPTIMIZE_LEVEL=light
@@ -92,7 +92,7 @@ node scripts/generate_image.mjs --draft-prompt --style taobao-product --optimize
 node scripts/generate_image.mjs --style taobao-product --optimize-level strong --prompt "根据这张产品图，生成一张高级电商主图，面向年轻用户，突出质感和卖点" --reference-image C:/path/product.png
 ```
 
-传入 `--reference-image` 时，默认会走 `/v1/images/edits`：
+传入 `--reference-image` 时，必须走 `/v1/images/edits`：
 
 ```text
 POST /v1/images/edits
@@ -101,11 +101,7 @@ image[]=@C:/path/product.png
 prompt=...
 ```
 
-如需测试旧的 JSON 参考图字段，可以加：
-
-```powershell
-node scripts/generate_image.mjs --api-mode generations --prompt "..." --reference-image C:/path/product.png
-```
+如确需指定尺寸，仅在接口支持时使用 `--size`，否则保持默认 `size=auto`。
 
 生成科技公司宣传海报：
 
@@ -128,5 +124,6 @@ node scripts/generate_image.mjs --style 3d-animation --optimize-level strong --p
 3. 把提示词展示给用户确认。
 4. 用户确认后，再用相同提示词和 `--reference-image` 调用生图。
 5. 生成后直接返回结果文件/预览；除非用户明确要求，不让模型再校验 logo、文字或画面是否准确。
+6. 该技能的职责到提交生成请求并保存返回结果为止。
 
 这样可以减少无效生成，也方便用户调整画面方向。

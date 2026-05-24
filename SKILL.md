@@ -13,7 +13,7 @@ Use the bundled Node.js image generation CLI to turn a user prompt into an image
 2. Clarify only missing essentials: subject, target use, aspect ratio/size, model, and whether reference images should be included. If the user already supplied enough detail, proceed.
 3. Always draft or present the final prompt and ask for user confirmation before spending a generation call, including reference-image/img2img tasks.
 4. Improve the prompt before generation unless the user explicitly asks to use it verbatim. Keep user intent intact, add concrete visual details, composition, lighting, material, camera/lens, and negative constraints.
-5. Use `gpt-image-2` by default. Do not select or pass another model unless the user explicitly asks for it. Explicit alternatives are `nano-banana-2`, `gpt-image-2-vip`, and `nano-banana-pro`.
+5. Use `gpt-image-2-vip` by default. Do not select or pass another model unless the user explicitly asks for it. Explicit alternatives are `nano-banana-2`, `gpt-image-2`, and `nano-banana-pro`.
 6. Apply a style preset when requested or when a preset clearly fits. Read `references/style-presets.md` for available preset language.
 7. Run `scripts/generate_image.mjs` with Node.js from this skill. Pass uploaded/local reference images with `--reference-image` once per file. If the user uploads or supplies any image, the request must use `/v1/images/edits` with `image[]=@file`; text-only prompts use `/v1/images/generations`.
 8. This skill is responsible only for prompt optimization, parameter selection, submitting the generation request, and saving the returned files. Do not add extra image-editing steps after the API response as part of this skill.
@@ -51,7 +51,7 @@ IMG_NEGATIVE=no watermark, no signature, no malformed hands
 IMG_SAVE_METADATA=1
 ```
 
-The default model is always `gpt-image-2`. Pass `--model` only after the user explicitly requests another allowed model.
+The default model is always `gpt-image-2-vip`. Pass `--model` only after the user explicitly requests another allowed model.
 
 ## Quick Commands
 

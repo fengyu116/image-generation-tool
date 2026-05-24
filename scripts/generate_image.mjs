@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const DEFAULT_ALLOWED_MODELS = ["nano-banana-2", "gpt-image-2", "gpt-image-2-vip", "nano-banana-pro"];
 const DEFAULT_BASE_URL = "https://api.modeltoken.cc";
-const DEFAULT_MODEL = "gpt-image-2";
+const DEFAULT_MODEL = "gpt-image-2-vip";
 const DEFAULT_SIZE = "auto";
 const DEFAULT_QUALITY = "auto";
 const DEFAULT_TIMEOUT_SECONDS = 150;
@@ -63,7 +63,7 @@ Image Generation Tool usage flow:
 5. Generate with reference image through /v1/images/edits:
    node generate_image.mjs --prompt "..." --reference-image C:/path/product.png
 
-The default model is gpt-image-2. Pass --model only when the user explicitly requests a different allowed model.
+The default model is gpt-image-2-vip. Pass --model only when the user explicitly requests a different allowed model.
 `.trim();
 
 function loadDotenv(filePath = path.join(process.cwd(), ".env")) {

@@ -5,7 +5,7 @@
 ## 功能
 
 - 使用 `.env` 配置接口地址、密钥、轻量默认参数和输出目录
-- 默认模型固定为 `gpt-image-2`；用户明确提出时可使用 `nano-banana-2`、`gpt-image-2-vip`、`nano-banana-pro`
+- 默认模型固定为 `gpt-image-2-vip`；用户明确提出时可使用 `nano-banana-2`、`gpt-image-2`、`nano-banana-pro`
 - 支持通过 `IMG_ALLOWED_MODELS` 动态配置模型白名单
 - 支持提示词优化等级：`none`、`light`、`standard`、`strong`
 - 内置风格预设：科技海报、3D 动画、产品图、品牌吉祥物、微信封面、小红书封面、淘宝主图等
@@ -58,7 +58,7 @@ IMG_SAVE_METADATA=1
 
 `IMG_API_KEY` 必须写入当前工作目录下的 `.env`，脚本不会从 shell 环境变量或命令行参数读取密钥。
 
-默认模型固定为 `gpt-image-2`。只有用户明确指定其它模型时，才通过 `--model` 传入 `nano-banana-2`、`gpt-image-2-vip` 或 `nano-banana-pro`。
+默认模型固定为 `gpt-image-2-vip`。只有用户明确指定其它模型时，才通过 `--model` 传入 `nano-banana-2`、`gpt-image-2` 或 `nano-banana-pro`。
 
 ## 常用命令
 
@@ -96,7 +96,7 @@ node scripts/generate_image.mjs --style taobao-product --optimize-level strong -
 
 ```text
 POST /v1/images/edits
-model=gpt-image-2
+model=gpt-image-2-vip
 image[]=@C:/path/product.png
 prompt=...
 ```

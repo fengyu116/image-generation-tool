@@ -1,4 +1,4 @@
 interface:
   display_name: "Image Generation Tool"
   short_description: "Generate images via .env-configured API"
-  default_prompt: "Use $image-generation-tool for any image generation request. Present the final prompt for my confirmation first, then generate with default gpt-image-2 unless I explicitly choose another model. Do not automatically validate the generated result."
+  default_prompt: "Use $image-generation-tool for any image generation request. Present the final prompt for my confirmation first, then generate with default gpt-image-2-vip unless I explicitly choose another model. Do not automatically validate the generated result."
